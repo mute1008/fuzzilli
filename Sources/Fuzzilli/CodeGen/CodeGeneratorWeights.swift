@@ -218,6 +218,9 @@ public let codeGeneratorWeights = [
     "ApiFunctionCallGenerator":                 15,
     "VoidGenerator":                            1,
 
+    // ShadowRealm - new isolated execution environment (highest priority for testing)
+    "ShadowRealmGenerator":                     50,
+
     // JS generators for wasm features (e.g. APIs on the WebAssembly global object).
     "WasmGlobalGenerator":                      4,
     "WasmMemoryGenerator":                      4,

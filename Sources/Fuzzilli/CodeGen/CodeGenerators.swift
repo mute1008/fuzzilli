@@ -3083,4 +3083,10 @@ public let CodeGenerators: [CodeGenerator] = [
         let newSize = b.binary(currentByteLength, delta, with: .Add)
         b.callMethod("grow", on: buffer, withArgs: [newSize], guard: true)
     },
+
+    // ShadowRealm - isolated JavaScript execution environment (requires --harmony-shadow-realm)
+    CodeGenerator("ShadowRealmGenerator", produces: [.jsShadowRealm]) { b in
+        let ShadowRealm = b.createNamedVariable(forBuiltin: "ShadowRealm")
+        b.construct(ShadowRealm, withArgs: [])
+    },
 ]

@@ -764,6 +764,7 @@ public func v8ProcessArgs(randomize: Bool, forSandbox: Bool) -> [String] {
         "--wasm-fast-api",
         "--expose-fast-api",
         "--wasm-test-streaming", // WebAssembly.compileStreaming & WebAssembly.instantiateStreaming()
+        "--harmony-shadow-realm", // Enable ShadowRealm (in progress feature)
     ]
     if forSandbox {
         args.append("--sandbox-fuzzing")

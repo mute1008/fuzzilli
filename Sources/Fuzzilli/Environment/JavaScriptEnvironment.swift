@@ -338,11 +338,13 @@ public class JavaScriptEnvironment: ComponentBase {
         registerObjectGroup(.jsFunctions)
         registerObjectGroup(.jsSymbols)
         registerObjectGroup(.jsMaps)
+        registerObjectGroup(.jsMapConstructor_)
         registerObjectGroup(.jsWeakMaps)
         registerObjectGroup(.jsSets)
         registerObjectGroup(.jsWeakSets)
         registerObjectGroup(.jsWeakRefs)
         registerObjectGroup(.jsFinalizationRegistrys)
+        registerObjectGroup(.jsShadowRealms)
         registerObjectGroup(.jsArrayBuffers)
         registerObjectGroup(.jsSharedArrayBuffers)
         for variant in ["Uint8Array", "Int8Array", "Uint16Array", "Int16Array", "Uint32Array", "Int32Array", "Float16Array", "Float32Array", "Float64Array", "Uint8ClampedArray", "BigInt64Array", "BigUint64Array"] {
@@ -596,6 +598,7 @@ public class JavaScriptEnvironment: ComponentBase {
         registerBuiltin("WeakSet", ofType: .jsWeakSetConstructor)
         registerBuiltin("WeakRef", ofType: .jsWeakRefConstructor)
         registerBuiltin("FinalizationRegistry", ofType: .jsFinalizationRegistryConstructor)
+        registerBuiltin("ShadowRealm", ofType: .jsShadowRealmConstructor)
         registerBuiltin("Math", ofType: .jsMathObject)
         registerBuiltin("JSON", ofType: .jsJSONObject)
         registerBuiltin("Reflect", ofType: .jsReflectObject)
@@ -1052,7 +1055,7 @@ public extension ILType {
     static let jsWeakMap = ILType.object(ofGroup: "WeakMap", withMethods: ["delete", "get", "has", "set", "getOrInsert", "getOrInsertComputed"])
 
     /// Type of a JavaScript Set object.
-    static let jsSet = ILType.iterable + ILType.object(ofGroup: "Set", withProperties: ["size"], withMethods: ["add", "clear", "delete", "entries", "forEach", "has", "keys", "values"])
+    static let jsSet = ILType.iterable + ILType.object(ofGroup: "Set", withProperties: ["size"], withMethods: ["add", "clear", "delete", "entries", "forEach", "has", "keys", "values", "union", "intersection", "difference", "symmetricDifference", "isSubsetOf", "isSupersetOf", "isDisjointFrom"])
 
     /// Type of a JavaScript WeakSet object.
     static let jsWeakSet = ILType.object(ofGroup: "WeakSet", withMethods: ["add", "delete", "has"])
@@ -1062,6 +1065,9 @@ public extension ILType {
 
     /// Type of a JavaScript FinalizationRegistry object.
     static let jsFinalizationRegistry = ILType.object(ofGroup: "FinalizationRegistry", withMethods: ["register", "unregister"])
+
+    /// Type of a JavaScript ShadowRealm object.
+    static let jsShadowRealm = ILType.object(ofGroup: "ShadowRealm", withMethods: ["evaluate", "importValue"])
 
     /// Type of a JavaScript ArrayBuffer object.
     static let jsArrayBuffer = ILType.object(ofGroup: "ArrayBuffer", withProperties: ["byteLength", "maxByteLength", "resizable"], withMethods: ["resize", "slice", "transfer", "transferToFixedLength", "transferToImmutable"])
@@ -1088,7 +1094,7 @@ public extension ILType {
     }
 
     /// Type of the JavaScript Object constructor builtin.
-    static let jsObjectConstructor = .functionAndConstructor([.jsAnything...] => .object()) + .object(ofGroup: "ObjectConstructor", withProperties: ["prototype"], withMethods: ["assign", "fromEntries", "getOwnPropertyDescriptor", "getOwnPropertyDescriptors", "getOwnPropertyNames", "getOwnPropertySymbols", "is", "preventExtensions", "seal", "create", "defineProperties", "defineProperty", "freeze", "getPrototypeOf", "setPrototypeOf", "isExtensible", "isFrozen", "isSealed", "keys", "entries", "values"])
+    static let jsObjectConstructor = .functionAndConstructor([.jsAnything...] => .object()) + .object(ofGroup: "ObjectConstructor", withProperties: ["prototype"], withMethods: ["assign", "fromEntries", "getOwnPropertyDescriptor", "getOwnPropertyDescriptors", "getOwnPropertyNames", "getOwnPropertySymbols", "is", "preventExtensions", "seal", "create", "defineProperties", "defineProperty", "freeze", "getPrototypeOf", "setPrototypeOf", "isExtensible", "isFrozen", "isSealed", "keys", "entries", "values", "groupBy"])
 
     /// Type of the JavaScript Array constructor builtin.
     static let jsArrayConstructor = .functionAndConstructor([.integer] => .jsArray) + .object(ofGroup: "ArrayConstructor", withProperties: ["prototype"], withMethods: ["from", "fromAsync", "of", "isArray"])
@@ -1144,13 +1150,13 @@ public extension ILType {
     static let jsDataViewConstructor = ILType.constructor([.plain(.jsArrayBuffer), .opt(.integer), .opt(.integer)] => .jsDataView)
 
     /// Type of the JavaScript Promise constructor builtin.
-    static let jsPromiseConstructor = ILType.constructor([.function()] => .jsPromise) + .object(ofGroup: "PromiseConstructor", withProperties: ["prototype"], withMethods: ["resolve", "reject", "all", "any", "race", "allSettled", "try"])
+    static let jsPromiseConstructor = ILType.constructor([.function()] => .jsPromise) + .object(ofGroup: "PromiseConstructor", withProperties: ["prototype"], withMethods: ["resolve", "reject", "all", "any", "race", "allSettled", "withResolvers", "try"])
 
     /// Type of the JavaScript Proxy constructor builtin.
     static let jsProxyConstructor = ILType.constructor([.object(), .object()] => .jsAnything)
 
     /// Type of the JavaScript Map constructor builtin.
-    static let jsMapConstructor = ILType.constructor([.object()] => .jsMap)
+    static let jsMapConstructor = ILType.constructor([.object()] => .jsMap) + .object(ofGroup: "MapConstructor", withProperties: ["prototype"], withMethods: ["groupBy"])
 
     /// Type of the JavaScript WeakMap constructor builtin.
     static let jsWeakMapConstructor = ILType.constructor([.object()] => .jsWeakMap)
@@ -1166,6 +1172,9 @@ public extension ILType {
 
     /// Type of the JavaScript FinalizationRegistry constructor builtin.
     static let jsFinalizationRegistryConstructor = ILType.constructor([.function()] => .jsFinalizationRegistry)
+
+    /// Type of the JavaScript ShadowRealm constructor builtin.
+    static let jsShadowRealmConstructor = ILType.constructor([] => .jsShadowRealm)
 
     /// Type of the JavaScript Math constructor builtin.
     static let jsMathObject = ILType.object(ofGroup: "Math", withProperties: ["E", "PI"], withMethods: ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "atan2", "ceil", "cbrt", "expm1", "clz32", "cos", "cosh", "exp", "floor", "fround", "f16round", "hypot", "imul", "log", "log1p", "log2", "log10", "max", "min", "pow", "random", "round", "sign", "sin", "sinh", "sqrt", "sumPrecise", "tan", "tanh", "trunc"])
@@ -1590,6 +1599,20 @@ public extension ObjectGroup {
         ]
     )
 
+    /// ObjectGroup modelling the JavaScript Map constructor builtin
+    static let jsMapConstructor_ = ObjectGroup(
+        name: "MapConstructor",
+        constructorPath: "Map",
+        instanceType: .jsMapConstructor,
+        properties: [
+            "prototype" : .object(),
+        ],
+        methods: [
+            // ES2024 groupBy
+            "groupBy" : [.iterable, .function()] => .jsMap,
+        ]
+    )
+
     /// ObjectGroup modelling JavaScript WeakMap objects
     static let jsWeakMaps = ObjectGroup(
         name: "WeakMap",
@@ -1613,14 +1636,22 @@ public extension ObjectGroup {
             "size"      : .integer
         ],
         methods: [
-            "add"     : [.jsAnything] => .jsSet,
-            "clear"   : [] => .undefined,
-            "delete"  : [.jsAnything] => .boolean,
-            "entries" : [] => .jsIterator,
-            "forEach" : [.function(), .opt(.object())] => .undefined,
-            "has"     : [.jsAnything] => .boolean,
-            "keys"    : [] => .jsIterator,
-            "values"  : [] => .jsIterator,
+            "add"                : [.jsAnything] => .jsSet,
+            "clear"              : [] => .undefined,
+            "delete"             : [.jsAnything] => .boolean,
+            "entries"            : [] => .jsIterator,
+            "forEach"            : [.function(), .opt(.object())] => .undefined,
+            "has"                : [.jsAnything] => .boolean,
+            "keys"               : [] => .jsIterator,
+            "values"             : [] => .jsIterator,
+            // ES2025 Set methods
+            "union"              : [.iterable] => .jsSet,
+            "intersection"       : [.iterable] => .jsSet,
+            "difference"         : [.iterable] => .jsSet,
+            "symmetricDifference": [.iterable] => .jsSet,
+            "isSubsetOf"         : [.iterable] => .boolean,
+            "isSupersetOf"       : [.iterable] => .boolean,
+            "isDisjointFrom"     : [.iterable] => .boolean,
         ]
     )
 
@@ -1654,6 +1685,17 @@ public extension ObjectGroup {
         methods: [
             "register"   : [.object(), .jsAnything, .opt(.object())] => .object(),
             "unregister" : [.jsAnything] => .undefined,
+        ]
+    )
+
+    /// ObjectGroup modelling JavaScript ShadowRealm objects
+    static let jsShadowRealms = ObjectGroup(
+        name: "ShadowRealm",
+        instanceType: .jsShadowRealm,
+        properties: [:],
+        methods: [
+            "evaluate"    : [.string] => .jsAnything,
+            "importValue" : [.string, .string] => .jsPromise,
         ]
     )
 
@@ -1803,13 +1845,15 @@ public extension ObjectGroup {
             "prototype" : jsPromisePrototype.instanceType
         ],
         methods: [
-            "resolve"    : [.jsAnything] => .jsPromise,
-            "reject"     : [.jsAnything] => .jsPromise,
-            "all"        : [.jsPromise...] => .jsPromise,
-            "any"        : [.jsPromise...] => .jsPromise,
-            "race"       : [.jsPromise...] => .jsPromise,
-            "allSettled" : [.jsPromise...] => .jsPromise,
-            "try"        : [.function(), .jsAnything...] => .jsPromise,
+            "resolve"       : [.jsAnything] => .jsPromise,
+            "reject"        : [.jsAnything] => .jsPromise,
+            "all"           : [.jsPromise...] => .jsPromise,
+            "any"           : [.jsPromise...] => .jsPromise,
+            "race"          : [.jsPromise...] => .jsPromise,
+            "allSettled"    : [.jsPromise...] => .jsPromise,
+            // ES2024 withResolvers, ES2025 try
+            "withResolvers" : [] => .object(withProperties: ["promise", "resolve", "reject"]),
+            "try"           : [.function(), .jsAnything...] => .jsPromise,
         ]
     )
 
@@ -1914,6 +1958,8 @@ public extension ObjectGroup {
             "seal"                      : [.object()] => .object(),
             "setPrototypeOf"            : [.object(), .object()] => .object(),
             "values"                    : [.object()] => .jsArray,
+            // ES2024 groupBy
+            "groupBy"                   : [.iterable, .function()] => .object(),
         ]
     )
 
